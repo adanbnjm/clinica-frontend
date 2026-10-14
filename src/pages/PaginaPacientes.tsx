@@ -81,27 +81,29 @@ export default function PaginaPacientes() {
   });
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-10">
+    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-wider text-emerald-700">
+          <p className="text-sm font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
             Clínica Salud Integral
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">Pacientes</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            Pacientes
+          </h1>
 
-          <p className="mt-2 text-slate-600">
+          <p className="mt-2 text-slate-600 dark:text-slate-400">
             Consulta y busca los pacientes registrados en la clínica.
           </p>
         </header>
 
-        <section className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors duration-300 dark:border-slate-700 dark:bg-slate-900">
           <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               Lista de pacientes
             </h2>
 
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {pacientesFiltrados.length}{" "}
               {pacientesFiltrados.length === 1 ? "paciente" : "pacientes"}
             </p>
@@ -119,12 +121,12 @@ export default function PaginaPacientes() {
               <PacienteRow key={paciente.id} paciente={paciente} />
             ))
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center">
-              <h2 className="font-semibold text-slate-800">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center dark:border-slate-700 dark:bg-slate-900">
+              <h2 className="font-semibold text-slate-800 dark:text-slate-100">
                 No se encontraron pacientes
               </h2>
 
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                 Prueba con otro nombre, correo o especialidad.
               </p>
             </div>
