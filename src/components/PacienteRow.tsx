@@ -31,7 +31,7 @@ export default function PacienteRow({ paciente }: PacienteRowProps) {
           Última cita: {paciente.ultimaCita || "Sin citas registradas"}
         </span>
 
-        <BadgeEstado estado={paciente.estado} />
+        {paciente.estado && <BadgeEstado estado={paciente.estado} />}
       </div>
     </article>
   );
