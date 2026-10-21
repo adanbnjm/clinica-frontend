@@ -4,6 +4,7 @@ import type { EstadoPaciente } from "../types/paciente";
 import BuscadorPacientes from "../components/BuscadorPacientes";
 import PacienteRow from "../components/PacienteRow";
 import { usePacientes } from "../hooks/usePacientes";
+import { Link } from "react-router-dom";
 
 export default function PaginaPacientes() {
   const {
@@ -234,6 +235,12 @@ export default function PaginaPacientes() {
             pacientesFiltrados.map((paciente) => (
               <article key={paciente.id} className="rounded-xl">
                 <PacienteRow paciente={paciente} />
+                <Link
+                  to={`/pacientes/${paciente.id}`}
+                  className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-neutral-900"
+                >
+                  Ver detalle →
+                </Link>
 
                 <div className="mt-2 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-slate-200 bg-white p-3 transition-colors duration-300 dark:border-neutral-800 dark:bg-neutral-950">
                   <label
