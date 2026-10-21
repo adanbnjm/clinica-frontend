@@ -2,6 +2,7 @@ import { useState } from "react";
 import MetricCard from "../components/MetricCard";
 import StatusBadge from "../components/StatusBadge";
 import type { Metrica } from "../types";
+import { Link } from "react-router-dom";
 
 export default function PaginaDashboard() {
   const [pacientes, setPacientes] = useState(128);
@@ -103,6 +104,12 @@ export default function PaginaDashboard() {
           <p className="mt-1 text-sm text-slate-500">
             Utiliza los botones para modificar el contador de pacientes.
           </p>
+          <Link
+            to="/pacientes"
+            className="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-black"
+          >
+            Ver Pacientes →
+          </Link>
 
           <div className="mt-4 flex items-center gap-3">
             <button
