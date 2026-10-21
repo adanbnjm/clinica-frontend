@@ -3,7 +3,7 @@ import type { Paciente, EstadoPaciente } from "../types/paciente";
 
 export type FiltroEstado = "Todos" | EstadoPaciente;
 
-const pacientesIniciales: Paciente[] = [
+export const PACIENTES_INICIALES: Paciente[] = [
   {
     id: "1",
     nombre: "Ana",
@@ -57,7 +57,7 @@ const pacientesIniciales: Paciente[] = [
 ];
 
 export function usePacientes() {
-  const [pacientes, setPacientes] = useState<Paciente[]>(pacientesIniciales);
+  const [pacientes, setPacientes] = useState<Paciente[]>(PACIENTES_INICIALES);
 
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState<FiltroEstado>("Todos");
