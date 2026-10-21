@@ -6,8 +6,9 @@ export default function PaginaDetallePaciente() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const paciente = PACIENTES_INICIALES.find((paciente) => paciente.id === id);
-
+  const paciente = PACIENTES_INICIALES.find(
+    (paciente) => paciente.id === Number(id),
+  );
   if (!paciente) {
     return <PaginaNotFound />;
   }

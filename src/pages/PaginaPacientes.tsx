@@ -17,6 +17,9 @@ export default function PaginaPacientes() {
     agregarPaciente,
     cambiarEstadoPaciente,
     eliminarPaciente,
+    cargando,
+    errorCarga,
+    cargarPacientes,
   } = usePacientes();
 
   const [nombre, setNombre] = useState("");
@@ -24,29 +27,57 @@ export default function PaginaPacientes() {
   const [email, setEmail] = useState("");
   const [nuevoEstado, setNuevoEstado] = useState<EstadoPaciente>("activo");
   const [errorFormulario, setErrorFormulario] = useState("");
+  const [apellidoMaterno, setApellidoMaterno] = useState("");
+  const [ci, setCi] = useState("");
+  const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [telefono, setTelefono] = useState("");
 
-  const manejarEnvioFormulario = (evento: React.FormEvent<HTMLFormElement>) => {
+  const manejarEnvioFormulario = async (
+    evento: React.FormEvent<HTMLFormElement>,
+  ) => {
     evento.preventDefault();
+    setErrorFormulario("");
 
-    if (!nombre.trim() || !email.trim()) {
-      setErrorFormulario("El nombre y el email son obligatorios.");
+    if (
+      !nombre.trim() ||
+      !apellido.trim() ||
+      !ci.trim() ||
+      !email.trim() ||
+      !fechaNacimiento
+    ) {
+      setErrorFormulario(
+        "Completa el nombre, apellido paterno, CI, correo y fecha de nacimiento.",
+      );
       return;
     }
 
-    agregarPaciente({
+    const registrado = await agregarPaciente({
       nombre,
-      apellido,
+      apellidoPaterno: apellido,
+      apellidoMaterno,
+      ci,
       email,
-      estado: nuevoEstado,
+      fechaNacimiento,
+      telefono,
     });
+
+    if (!registrado) {
+      setErrorFormulario(
+        "No se pudo registrar el paciente. Revisa los datos o el mensaje de error.",
+      );
+      return;
+    }
 
     setNombre("");
     setApellido("");
+    setApellidoMaterno("");
+    setCi("");
     setEmail("");
+    setFechaNacimiento("");
+    setTelefono("");
     setNuevoEstado("activo");
     setErrorFormulario("");
   };
-
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 transition-colors duration-300 dark:bg-black dark:text-neutral-100 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-6xl">
@@ -162,6 +193,40 @@ export default function PaginaPacientes() {
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-emerald-400"
               />
             </div>
+            <div>
+              <label
+                htmlFor="ci"
+                className="mb-1 block text-sm font-medium text-slate-700 dark:text-neutral-200"
+              >
+                Carnet de identidad *
+              </label>
+              <input
+                id="ci"
+                type="text"
+                value={ci}
+                onChange={(evento) => setCi(evento.currentTarget.value)}
+                required
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="apellidoMaterno"
+                className="mb-1 block text-sm font-medium text-slate-700 dark:text-neutral-200"
+              >
+                Apellido materno
+              </label>
+              <input
+                id="apellidoMaterno"
+                type="text"
+                value={apellidoMaterno}
+                onChange={(evento) =>
+                  setApellidoMaterno(evento.currentTarget.value)
+                }
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100"
+              />
+            </div>
 
             <div>
               <label
@@ -181,6 +246,40 @@ export default function PaginaPacientes() {
                 }}
                 required
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-emerald-400"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="fechaNacimiento"
+                className="mb-1 block text-sm font-medium text-slate-700 dark:text-neutral-200"
+              >
+                Fecha de nacimiento *
+              </label>
+              <input
+                id="fechaNacimiento"
+                type="date"
+                value={fechaNacimiento}
+                onChange={(evento) =>
+                  setFechaNacimiento(evento.currentTarget.value)
+                }
+                required
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="telefono"
+                className="mb-1 block text-sm font-medium text-slate-700 dark:text-neutral-200"
+              >
+                Teléfono
+              </label>
+              <input
+                id="telefono"
+                type="tel"
+                value={telefono}
+                onChange={(evento) => setTelefono(evento.currentTarget.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100"
               />
             </div>
 
@@ -231,6 +330,29 @@ export default function PaginaPacientes() {
           aria-label="Resultados de pacientes"
           className="flex flex-col gap-4"
         >
+          {cargando && (
+            <p className="rounded-xl border border-slate-200 bg-white p-4 text-slate-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300">
+              Cargando pacientes...
+            </p>
+          )}
+
+          {errorCarga && (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+            >
+              <p>{errorCarga}</p>
+
+              <button
+                type="button"
+                onClick={() => void cargarPacientes()}
+                disabled={cargando}
+                className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
+              >
+                {cargando ? "Reintentando..." : "Reintentar"}
+              </button>
+            </div>
+          )}
           {pacientesFiltrados.length > 0 ? (
             pacientesFiltrados.map((paciente) => (
               <article key={paciente.id} className="rounded-xl">
