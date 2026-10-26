@@ -1,18 +1,49 @@
+import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { PACIENTES_INICIALES } from "../hooks/usePacientes";
+import { usePacientesStore } from "../stores/pacientesStore";
 import PaginaNotFound from "./PaginaNotFound";
 
 export default function PaginaDetallePaciente() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const paciente = PACIENTES_INICIALES.find(
-    (paciente) => paciente.id === Number(id),
-  );
+  const pacientes = usePacientesStore((s) => s.pacientes);
+  const cargar = usePacientesStore((s) => s.cargar);
+  const cargando = usePacientesStore((s) => s.cargando);
+  const error = usePacientesStore((s) => s.error);
+
+  useEffect(() => {
+    if (pacientes.length === 0) {
+      void cargar();
+    }
+  }, [pacientes.length, cargar]);
+
+  const paciente = pacientes.find((paciente) => paciente.id === Number(id));
+
+  if (cargando && !paciente) {
+    return (
+      <main className="p-8 text-center">Cargando datos del paciente...</main>
+    );
+  }
+
+  if (error && !paciente) {
+    return (
+      <main className="p-8 text-center">
+        <p>{error}</p>
+        <button
+          type="button"
+          onClick={() => void cargar()}
+          className="mt-4 rounded-lg border px-4 py-2"
+        >
+          Reintentar
+        </button>
+      </main>
+    );
+  }
+
   if (!paciente) {
     return <PaginaNotFound />;
   }
-
   return (
     <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-4xl">

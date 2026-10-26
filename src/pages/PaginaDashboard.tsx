@@ -1,79 +1,80 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import MetricCard from "../components/MetricCard";
 import StatusBadge from "../components/StatusBadge";
 import type { Metrica } from "../types";
 import { api } from "../lib/axios";
-
-interface PacienteApi {
-  id: number;
-}
+import { usePacientesStore } from "../stores/pacientesStore";
+import { useCitasStore } from "../stores/citasStore";
 
 interface MedicoApi {
   id: number;
 }
 
-interface CitaApi {
-  id: number;
-  estado: "PROGRAMADA" | "COMPLETADA" | "CANCELADA";
-  fechaHora: string;
-}
-
 export default function PaginaDashboard() {
   const [mantenimiento, setMantenimiento] = useState(false);
-  const [totalPacientes, setTotalPacientes] = useState<number | null>(null);
   const [totalMedicos, setTotalMedicos] = useState<number | null>(null);
-  const [citasProgramadas, setCitasProgramadas] = useState<number | null>(null);
-  const [completadasHoy, setCompletadasHoy] = useState<number | null>(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState("");
+  const [cargandoMedicos, setCargandoMedicos] = useState(true);
+  const [errorMedicos, setErrorMedicos] = useState("");
 
-  const cargarMetricas = useCallback(async () => {
-    setCargando(true);
-    setError("");
+  const pacientes = usePacientesStore((s) => s.pacientes);
+  const cargarPacientes = usePacientesStore((s) => s.cargar);
+  const cargandoPacientes = usePacientesStore((s) => s.cargando);
+  const errorPacientes = usePacientesStore((s) => s.error);
+
+  const citas = useCitasStore((s) => s.citas);
+  const cargarTodasLasCitas = useCitasStore((s) => s.cargar);
+  const cargandoCitas = useCitasStore((s) => s.cargando);
+
+  const cargarMedicos = async () => {
+    setCargandoMedicos(true);
+    setErrorMedicos("");
 
     try {
-      const [respuestaPacientes, respuestaMedicos, respuestaCitas] =
-        await Promise.all([
-          api.get<PacienteApi[]>("/pacientes"),
-          api.get<MedicoApi[]>("/medicos"),
-          api.get<CitaApi[]>("/citas"),
-        ]);
-
-      const citas = respuestaCitas.data;
-      const hoy = new Date();
-
-      const programadas = citas.filter(
-        (cita) => cita.estado === "PROGRAMADA",
-      ).length;
-
-      const completadas = citas.filter((cita) => {
-        const fechaCita = new Date(cita.fechaHora);
-
-        return (
-          cita.estado === "COMPLETADA" &&
-          fechaCita.getFullYear() === hoy.getFullYear() &&
-          fechaCita.getMonth() === hoy.getMonth() &&
-          fechaCita.getDate() === hoy.getDate()
-        );
-      }).length;
-
-      setTotalPacientes(respuestaPacientes.data.length);
-      setTotalMedicos(respuestaMedicos.data.length);
-      setCitasProgramadas(programadas);
-      setCompletadasHoy(completadas);
+      const respuesta = await api.get<MedicoApi[]>("/medicos");
+      setTotalMedicos(respuesta.data.length);
     } catch {
-      setError(
-        "No se pudieron cargar las métricas. Comprueba tu sesión y que el backend esté funcionando.",
+      setErrorMedicos(
+        "No se pudieron cargar los médicos. Comprueba tu sesión y el backend.",
       );
     } finally {
-      setCargando(false);
+      setCargandoMedicos(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    void cargarMetricas();
-  }, [cargarMetricas]);
+    if (pacientes.length === 0) {
+      void cargarPacientes();
+    }
+
+    if (citas.length === 0) {
+      void cargarTodasLasCitas();
+    }
+
+    void cargarMedicos();
+  }, [pacientes.length, citas.length, cargarPacientes, cargarTodasLasCitas]);
+
+  const cargando = cargandoPacientes || cargandoCitas || cargandoMedicos;
+
+  const error = errorPacientes || errorMedicos;
+
+  const totalPacientes = pacientes.length;
+
+  const citasProgramadas = citas.filter(
+    (cita) => cita.estado === "PROGRAMADA",
+  ).length;
+
+  const completadasHoy = citas.filter((cita) => {
+    const fechaCita = new Date(cita.fechaHora);
+    const hoy = new Date();
+
+    return (
+      cita.estado === "COMPLETADA" &&
+      fechaCita.getFullYear() === hoy.getFullYear() &&
+      fechaCita.getMonth() === hoy.getMonth() &&
+      fechaCita.getDate() === hoy.getDate()
+    );
+  }).length;
 
   const metricas: Metrica[] = [
     {
@@ -169,7 +170,11 @@ export default function PaginaDashboard() {
 
             <button
               type="button"
-              onClick={() => void cargarMetricas()}
+              onClick={() => {
+                void cargarPacientes();
+                void cargarTodasLasCitas();
+                void cargarMedicos();
+              }}
               className="rounded-lg bg-rose-700 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-800"
             >
               Reintentar

@@ -1,26 +1,69 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type * as React from "react";
 import type { EstadoPaciente } from "../types/paciente";
 import BuscadorPacientes from "../components/BuscadorPacientes";
 import PacienteRow from "../components/PacienteRow";
-import { usePacientes } from "../hooks/usePacientes";
 import { Link } from "react-router-dom";
+import { usePacientesStore } from "../stores/pacientesStore";
+import { useFiltrosStore } from "../stores/filtrosStore";
 
 export default function PaginaPacientes() {
-  const {
-    pacientesFiltrados,
-    busqueda,
-    setBusqueda,
-    estadoFiltro,
-    setEstadoFiltro,
-    limpiarFiltros,
-    agregarPaciente,
-    cambiarEstadoPaciente,
-    eliminarPaciente,
-    cargando,
-    errorCarga,
-    cargarPacientes,
-  } = usePacientes();
+  const pacientes = usePacientesStore((s) => s.pacientes);
+  const cargando = usePacientesStore((s) => s.cargando);
+  const errorCarga = usePacientesStore((s) => s.error);
+  const cargar = usePacientesStore((s) => s.cargar);
+  const crear = usePacientesStore((s) => s.crear);
+  const actualizar = usePacientesStore((s) => s.actualizar);
+  const eliminar = usePacientesStore((s) => s.eliminar);
+
+  const busqueda = useFiltrosStore((s) => s.queryPacientes);
+  const setBusqueda = useFiltrosStore((s) => s.setQueryPacientes);
+
+  const estadoFiltro = useFiltrosStore((s) => s.estadoPacienteFiltro);
+  const setEstadoFiltro = useFiltrosStore((s) => s.setEstadoPacienteFiltro);
+
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  const textoBusqueda = busqueda.trim().toLowerCase();
+
+  const pacientesFiltrados = pacientes.filter((paciente) => {
+    const nombreCompleto =
+      `${paciente.nombre} ${paciente.apellido}`.toLowerCase();
+
+    const coincideTexto =
+      nombreCompleto.includes(textoBusqueda) ||
+      paciente.email.toLowerCase().includes(textoBusqueda) ||
+      paciente.telefono.toLowerCase().includes(textoBusqueda) ||
+      (paciente.especialidadAsignada ?? "")
+        .toLowerCase()
+        .includes(textoBusqueda);
+
+    const coincideEstado =
+      estadoFiltro === "Todos" || paciente.estado === estadoFiltro;
+
+    return coincideTexto && coincideEstado;
+  });
+
+  const resetFiltros = useFiltrosStore((s) => s.resetFiltros);
+
+  const limpiarFiltros = () => {
+    resetFiltros();
+  };
+  const cambiarEstadoPaciente = (id: number, estado: EstadoPaciente) => {
+    void actualizar(id, { estado }).catch(() => {});
+  };
+
+  const eliminarPaciente = (id: number) => {
+    const confirmar = window.confirm(
+      "¿Estás seguro de que deseas eliminar este paciente?",
+    );
+
+    if (confirmar) {
+      void eliminar(id).catch(() => {});
+    }
+  };
 
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
@@ -51,21 +94,30 @@ export default function PaginaPacientes() {
       return;
     }
 
-    const registrado = await agregarPaciente({
-      nombre,
-      apellidoPaterno: apellido,
-      apellidoMaterno,
-      ci,
-      email,
-      fechaNacimiento,
-      telefono,
-    });
+    try {
+      await crear({
+        nombre,
+        apellidoPaterno: apellido,
+        apellidoMaterno,
+        ci,
+        email,
+        fechaNacimiento,
+        telefono,
+      });
 
-    if (!registrado) {
+      setNombre("");
+      setApellido("");
+      setApellidoMaterno("");
+      setCi("");
+      setEmail("");
+      setFechaNacimiento("");
+      setTelefono("");
+      setNuevoEstado("activo");
+      setErrorFormulario("");
+    } catch {
       setErrorFormulario(
         "No se pudo registrar el paciente. Revisa los datos o el mensaje de error.",
       );
-      return;
     }
 
     setNombre("");
@@ -345,7 +397,7 @@ export default function PaginaPacientes() {
 
               <button
                 type="button"
-                onClick={() => void cargarPacientes()}
+                onClick={() => void cargar()}
                 disabled={cargando}
                 className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
               >
