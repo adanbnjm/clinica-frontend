@@ -3,9 +3,12 @@ import type * as React from "react";
 import type { EstadoPaciente } from "../types/paciente";
 import BuscadorPacientes from "../components/BuscadorPacientes";
 import PacienteRow from "../components/PacienteRow";
+import ModalConfirmacion from "../components/ModalConfirmacion";
 import { Link } from "react-router-dom";
 import { usePacientesStore } from "../stores/pacientesStore";
 import { useFiltrosStore } from "../stores/filtrosStore";
+import toast from "react-hot-toast";
+import { extraerMensajeError } from "../lib/errorHandler";
 
 export default function PaginaPacientes() {
   const pacientes = usePacientesStore((s) => s.pacientes);
@@ -18,9 +21,25 @@ export default function PaginaPacientes() {
 
   const busqueda = useFiltrosStore((s) => s.queryPacientes);
   const setBusqueda = useFiltrosStore((s) => s.setQueryPacientes);
-
   const estadoFiltro = useFiltrosStore((s) => s.estadoPacienteFiltro);
   const setEstadoFiltro = useFiltrosStore((s) => s.setEstadoPacienteFiltro);
+  const resetFiltros = useFiltrosStore((s) => s.resetFiltros);
+
+  const [nombre, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
+  const [apellidoMaterno, setApellidoMaterno] = useState("");
+  const [ci, setCi] = useState("");
+  const [email, setEmail] = useState("");
+  const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [nuevoEstado, setNuevoEstado] = useState<EstadoPaciente>("activo");
+  const [errorFormulario, setErrorFormulario] = useState("");
+
+  const [eliminandoId, setEliminandoId] = useState<number | null>(null);
+  const [pacientePendienteEliminar, setPacientePendienteEliminar] = useState<
+    number | null
+  >(null);
+  const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
 
   useEffect(() => {
     void cargar();
@@ -46,34 +65,37 @@ export default function PaginaPacientes() {
     return coincideTexto && coincideEstado;
   });
 
-  const resetFiltros = useFiltrosStore((s) => s.resetFiltros);
-
   const limpiarFiltros = () => {
     resetFiltros();
   };
-  const cambiarEstadoPaciente = (id: number, estado: EstadoPaciente) => {
-    void actualizar(id, { estado }).catch(() => {});
-  };
 
-  const eliminarPaciente = (id: number) => {
-    const confirmar = window.confirm(
-      "¿Estás seguro de que deseas eliminar este paciente?",
-    );
-
-    if (confirmar) {
-      void eliminar(id).catch(() => {});
+  const cambiarEstadoPaciente = async (id: number, estado: EstadoPaciente) => {
+    try {
+      await actualizar(id, { estado });
+      toast.success("Estado del paciente actualizado");
+    } catch (err: unknown) {
+      toast.error(extraerMensajeError(err));
     }
   };
 
-  const [nombre, setNombre] = useState("");
-  const [apellido, setApellido] = useState("");
-  const [email, setEmail] = useState("");
-  const [nuevoEstado, setNuevoEstado] = useState<EstadoPaciente>("activo");
-  const [errorFormulario, setErrorFormulario] = useState("");
-  const [apellidoMaterno, setApellidoMaterno] = useState("");
-  const [ci, setCi] = useState("");
-  const [fechaNacimiento, setFechaNacimiento] = useState("");
-  const [telefono, setTelefono] = useState("");
+  const eliminarPaciente = async (id: number) => {
+    if (eliminandoId !== null) {
+      return;
+    }
+
+    setEliminandoId(id);
+
+    try {
+      await eliminar(id);
+      toast.success("Paciente eliminado");
+      setModalEliminarAbierto(false);
+      setPacientePendienteEliminar(null);
+    } catch (err: unknown) {
+      toast.error(extraerMensajeError(err));
+    } finally {
+      setEliminandoId(null);
+    }
+  };
 
   const manejarEnvioFormulario = async (
     evento: React.FormEvent<HTMLFormElement>,
@@ -96,13 +118,13 @@ export default function PaginaPacientes() {
 
     try {
       await crear({
-        nombre,
-        apellidoPaterno: apellido,
-        apellidoMaterno,
-        ci,
-        email,
+        nombre: nombre.trim(),
+        apellidoPaterno: apellido.trim(),
+        apellidoMaterno: apellidoMaterno.trim(),
+        ci: ci.trim(),
+        email: email.trim(),
         fechaNacimiento,
-        telefono,
+        telefono: telefono.trim(),
       });
 
       setNombre("");
@@ -114,22 +136,15 @@ export default function PaginaPacientes() {
       setTelefono("");
       setNuevoEstado("activo");
       setErrorFormulario("");
-    } catch {
-      setErrorFormulario(
-        "No se pudo registrar el paciente. Revisa los datos o el mensaje de error.",
-      );
-    }
 
-    setNombre("");
-    setApellido("");
-    setApellidoMaterno("");
-    setCi("");
-    setEmail("");
-    setFechaNacimiento("");
-    setTelefono("");
-    setNuevoEstado("activo");
-    setErrorFormulario("");
+      toast.success("Paciente registrado");
+    } catch (err: unknown) {
+      const mensaje = extraerMensajeError(err);
+      setErrorFormulario(mensaje);
+      toast.error(mensaje);
+    }
   };
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 transition-colors duration-300 dark:bg-black dark:text-neutral-100 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-6xl">
@@ -215,7 +230,6 @@ export default function PaginaPacientes() {
               >
                 Nombre *
               </label>
-
               <input
                 id="nombre"
                 type="text"
@@ -234,17 +248,18 @@ export default function PaginaPacientes() {
                 htmlFor="apellido"
                 className="mb-1 block text-sm font-medium text-slate-700 dark:text-neutral-200"
               >
-                Apellido
+                Apellido paterno *
               </label>
-
               <input
                 id="apellido"
                 type="text"
                 value={apellido}
                 onChange={(evento) => setApellido(evento.currentTarget.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-emerald-400"
+                required
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100"
               />
             </div>
+
             <div>
               <label
                 htmlFor="ci"
@@ -287,7 +302,6 @@ export default function PaginaPacientes() {
               >
                 Email *
               </label>
-
               <input
                 id="email"
                 type="email"
@@ -300,6 +314,7 @@ export default function PaginaPacientes() {
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-emerald-400"
               />
             </div>
+
             <div>
               <label
                 htmlFor="fechaNacimiento"
@@ -342,7 +357,6 @@ export default function PaginaPacientes() {
               >
                 Estado inicial
               </label>
-
               <select
                 id="nuevo-estado"
                 value={nuevoEstado}
@@ -394,7 +408,6 @@ export default function PaginaPacientes() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
             >
               <p>{errorCarga}</p>
-
               <button
                 type="button"
                 onClick={() => void cargar()}
@@ -405,64 +418,88 @@ export default function PaginaPacientes() {
               </button>
             </div>
           )}
-          {pacientesFiltrados.length > 0 ? (
-            pacientesFiltrados.map((paciente) => (
-              <article key={paciente.id} className="rounded-xl">
-                <PacienteRow paciente={paciente} />
-                <Link
-                  to={`/pacientes/${paciente.id}`}
-                  className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-neutral-900"
-                >
-                  Ver detalle →
-                </Link>
 
-                <div className="mt-2 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-slate-200 bg-white p-3 transition-colors duration-300 dark:border-neutral-800 dark:bg-neutral-950">
-                  <label
-                    htmlFor={`estado-paciente-${paciente.id}`}
-                    className="text-sm text-slate-600 dark:text-neutral-300"
-                  >
-                    Cambiar estado:
-                  </label>
+          {pacientesFiltrados.length > 0
+            ? pacientesFiltrados.map((paciente) => (
+                <article key={paciente.id} className="rounded-xl">
+                  <PacienteRow paciente={paciente} />
 
-                  <select
-                    id={`estado-paciente-${paciente.id}`}
-                    value={paciente.estado}
-                    onChange={(evento) =>
-                      cambiarEstadoPaciente(
-                        paciente.id,
-                        evento.currentTarget.value as EstadoPaciente,
-                      )
-                    }
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-colors focus:border-emerald-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-emerald-400"
+                  <Link
+                    to={`/pacientes/${paciente.id}`}
+                    className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-neutral-900"
                   >
-                    <option value="activo">Activo</option>
-                    <option value="inactivo">Inactivo</option>
-                    <option value="en_espera">En espera</option>
-                  </select>
+                    Ver detalle →
+                  </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => eliminarPaciente(paciente.id)}
-                    className="rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
-                  >
-                    Eliminar
-                  </button>
+                  <div className="mt-2 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-slate-200 bg-white p-3 transition-colors duration-300 dark:border-neutral-800 dark:bg-neutral-950">
+                    <label
+                      htmlFor={`estado-paciente-${paciente.id}`}
+                      className="text-sm text-slate-600 dark:text-neutral-300"
+                    >
+                      Cambiar estado:
+                    </label>
+
+                    <select
+                      id={`estado-paciente-${paciente.id}`}
+                      value={paciente.estado}
+                      onChange={(evento) =>
+                        void cambiarEstadoPaciente(
+                          paciente.id,
+                          evento.currentTarget.value as EstadoPaciente,
+                        )
+                      }
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-colors focus:border-emerald-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-emerald-400"
+                    >
+                      <option value="activo">Activo</option>
+                      <option value="inactivo">Inactivo</option>
+                      <option value="en_espera">En espera</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      disabled={eliminandoId !== null}
+                      onClick={() => {
+                        setPacientePendienteEliminar(paciente.id);
+                        setModalEliminarAbierto(true);
+                      }}
+                      className="rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </article>
+              ))
+            : !cargando && (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center transition-colors dark:border-neutral-800 dark:bg-neutral-950">
+                  <h2 className="font-semibold text-slate-800 dark:text-neutral-100">
+                    No se encontraron pacientes
+                  </h2>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
+                    Prueba con otra búsqueda o cambia el estado seleccionado.
+                  </p>
                 </div>
-              </article>
-            ))
-          ) : (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center transition-colors dark:border-neutral-800 dark:bg-neutral-950">
-              <h2 className="font-semibold text-slate-800 dark:text-neutral-100">
-                No se encontraron pacientes
-              </h2>
-
-              <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
-                Prueba con otra búsqueda o cambia el estado seleccionado.
-              </p>
-            </div>
-          )}
+              )}
         </section>
       </div>
+
+      <ModalConfirmacion
+        abierto={modalEliminarAbierto}
+        titulo="Eliminar paciente"
+        mensaje="¿Estás seguro de que deseas eliminar este paciente? Esta acción no se puede deshacer."
+        textoConfirmar="Eliminar"
+        cargando={eliminandoId !== null}
+        onCancelar={() => {
+          if (eliminandoId === null) {
+            setModalEliminarAbierto(false);
+            setPacientePendienteEliminar(null);
+          }
+        }}
+        onConfirmar={() => {
+          if (pacientePendienteEliminar !== null) {
+            void eliminarPaciente(pacientePendienteEliminar);
+          }
+        }}
+      />
     </main>
   );
 }
