@@ -10,10 +10,7 @@ const fechaActual = () => {
 };
 
 export const citaSchema = z.object({
-  pacienteNombre: z
-    .string()
-    .trim()
-    .min(3, "El nombre del paciente debe tener al menos 3 caracteres."),
+  pacienteNombre: z.string().min(1, "Selecciona un paciente."),
 
   medicoId: z.string().min(1, "Selecciona un médico para la cita."),
 

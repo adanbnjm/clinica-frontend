@@ -1,12 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { CitaFormData } from "../schemas/citaSchema";
 import { citaSchema } from "../schemas/citaSchema";
 import { useMedicos } from "../hooks/useMedicos";
+import { usePacientesStore } from "../stores/pacientesStore";
+import { useCitasStore } from "../stores/citasStore";
+import type { NuevaCita } from "../types/cita";
 
 export default function FormularioCita() {
   const { medicos, cargando } = useMedicos();
+  const pacientes = usePacientesStore((s) => s.pacientes);
+  const cargarPacientes = usePacientesStore((s) => s.cargar);
+  const cargandoPacientes = usePacientesStore((s) => s.cargando);
+  const errorPacientes = usePacientesStore((s) => s.error);
+  const agregarCita = useCitasStore((s) => s.agregarCita);
+
+  useEffect(() => {
+    if (pacientes.length === 0) {
+      void cargarPacientes();
+    }
+  }, [pacientes.length, cargarPacientes]);
   const [citaConfirmada, setCitaConfirmada] = useState<CitaFormData | null>(
     null,
   );
@@ -40,11 +54,20 @@ export default function FormularioCita() {
   })();
 
   const enviarFormulario = async (datos: CitaFormData) => {
-    await new Promise<void>((resolver) => {
-      setTimeout(resolver, 1500);
-    });
+    try {
+      const fechaHora = `${datos.fecha}T${datos.hora}:00`;
 
-    setCitaConfirmada(datos);
+      const nuevaCita: NuevaCita = {
+        pacienteId: Number(datos.pacienteNombre),
+        medicoId: Number(datos.medicoId),
+        fechaHora,
+      };
+
+      await agregarCita(nuevaCita);
+      setCitaConfirmada(datos);
+    } catch (error) {
+      console.error("Error al agendar la cita:", error);
+    }
   };
 
   const agendarOtraCita = () => {
@@ -64,7 +87,11 @@ export default function FormularioCita() {
 
   if (citaConfirmada) {
     const medicoSeleccionado = medicos.find(
-      (medico) => medico.id === citaConfirmada.medicoId,
+      (medico) => String(medico.id) === citaConfirmada.medicoId,
+    );
+
+    const pacienteSeleccionado = pacientes.find(
+      (paciente) => paciente.id === Number(citaConfirmada.pacienteNombre),
     );
 
     return (
@@ -89,7 +116,7 @@ export default function FormularioCita() {
             </h2>
 
             <p className="text-sm text-slate-600 dark:text-neutral-400">
-              La solicitud se registró correctamente en esta demostración.
+              La cita se registró correctamente en el sistema.
             </p>
           </div>
         </div>
@@ -99,7 +126,11 @@ export default function FormularioCita() {
             <dt className="text-sm text-slate-500 dark:text-neutral-400">
               Paciente
             </dt>
-            <dd className="font-medium">{citaConfirmada.pacienteNombre}</dd>
+            <dd className="font-medium">
+              {pacienteSeleccionado
+                ? `${pacienteSeleccionado.nombre} ${pacienteSeleccionado.apellido}`
+                : "Paciente no disponible"}
+            </dd>
           </div>
 
           <div>
@@ -179,21 +210,40 @@ export default function FormularioCita() {
             htmlFor="pacienteNombre"
             className="block text-sm font-medium text-slate-700 dark:text-neutral-200"
           >
-            Nombre del paciente *
+            Paciente *
           </label>
 
-          <input
+          <select
             id="pacienteNombre"
-            type="text"
-            placeholder="Ej. Ana Pérez"
-            autoComplete="name"
             aria-invalid={Boolean(errors.pacienteNombre)}
             aria-describedby={
               errors.pacienteNombre ? "pacienteNombre-error" : undefined
             }
+            disabled={cargandoPacientes}
             {...register("pacienteNombre")}
             className={claseCampo(Boolean(errors.pacienteNombre))}
-          />
+          >
+            <option value="">
+              {cargandoPacientes
+                ? "Cargando pacientes..."
+                : "Selecciona un paciente"}
+            </option>
+
+            {pacientes.map((paciente) => (
+              <option key={paciente.id} value={String(paciente.id)}>
+                {paciente.nombre} {paciente.apellido}
+              </option>
+            ))}
+          </select>
+
+          {errorPacientes && (
+            <p
+              role="alert"
+              className="mt-1 text-sm text-rose-600 dark:text-rose-400"
+            >
+              {errorPacientes}
+            </p>
+          )}
 
           {errors.pacienteNombre && (
             <p
