@@ -12,7 +12,7 @@ interface CitasState {
   cargarPorPaciente: (id: number) => Promise<void>;
 
   seleccionar: (id: number) => void;
-  actualizarEstado: (id: number, estado: EstadoCita) => void;
+  actualizarEstado: (id: number, estado: EstadoCita) => Promise<void>;
   agregarCita: (datos: NuevaCita) => Promise<Cita>;
 }
 
@@ -22,6 +22,7 @@ export const useCitasStore = create<CitasState>()(
       citas: [],
       citaSeleccionada: null,
       cargando: false,
+
       cargar: async () => {
         set({ cargando: true }, false, "cargar/inicio");
 
@@ -45,8 +46,6 @@ export const useCitasStore = create<CitasState>()(
         set({ cargando: true }, false, "cargarPorPaciente/inicio");
 
         try {
-          // El backend aún no tiene una ruta para filtrar por paciente.
-          // Descargamos las citas y filtramos en el frontend.
           const respuesta = await api.get<Cita[]>("/citas");
 
           const citasPaciente = respuesta.data.filter(
@@ -67,13 +66,21 @@ export const useCitasStore = create<CitasState>()(
       },
 
       seleccionar: (id) => {
-        const cita = get().citas.find((c) => c.id === id) ?? null;
+        const cita = get().citas.find((cita) => cita.id === id) ?? null;
 
         set({ citaSeleccionada: cita }, false, "seleccionar");
       },
 
-      actualizarEstado: (id, estado) => {
-        // Actualización local temporal: el backend aún no tiene PUT/PATCH.
+      actualizarEstado: async (id, estado) => {
+        const estadoAnterior = get().citas.find((cita) => cita.id === id);
+
+        if (!estadoAnterior) {
+          throw new Error("No se encontró la cita que deseas actualizar.");
+        }
+
+        const citaSeleccionadaAnterior = get().citaSeleccionada;
+
+        // 1. Actualización optimista: cambia la interfaz inmediatamente.
         set(
           (state) => ({
             citas: state.citas.map((cita) =>
@@ -85,8 +92,47 @@ export const useCitasStore = create<CitasState>()(
                 : state.citaSeleccionada,
           }),
           false,
-          "actualizarEstado/local",
+          "actualizarEstado/optimista",
         );
+
+        try {
+          // 2. Guarda el cambio en el backend.
+          const respuesta = await api.patch<Cita>(`/citas/${id}/estado`, {
+            estado,
+          });
+
+          // 3. Sincroniza con el registro confirmado por el servidor.
+          set(
+            (state) => ({
+              citas: state.citas.map((cita) =>
+                cita.id === id ? respuesta.data : cita,
+              ),
+              citaSeleccionada:
+                state.citaSeleccionada?.id === id
+                  ? respuesta.data
+                  : state.citaSeleccionada,
+            }),
+            false,
+            "actualizarEstado/exito",
+          );
+        } catch (error) {
+          // 4. Si falla la petición, restaura el estado anterior.
+          set(
+            (state) => ({
+              citas: state.citas.map((cita) =>
+                cita.id === id ? estadoAnterior : cita,
+              ),
+              citaSeleccionada:
+                citaSeleccionadaAnterior?.id === id
+                  ? citaSeleccionadaAnterior
+                  : state.citaSeleccionada,
+            }),
+            false,
+            "actualizarEstado/revertir",
+          );
+
+          throw error;
+        }
       },
 
       agregarCita: async (datos) => {
