@@ -45,6 +45,18 @@ export default function LayoutPrincipal() {
             Nueva cita
           </NavLink>
         </nav>
+        <NavLink
+          to="/citas"
+          className={({ isActive }) =>
+            `block rounded-lg px-4 py-2 transition-colors ${
+              isActive
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            }`
+          }
+        >
+          Citas
+        </NavLink>
 
         <div className="mt-auto">
           <button
