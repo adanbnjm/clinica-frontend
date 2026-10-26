@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { api } from "../lib/axios";
 import type { Paciente, EstadoPaciente } from "../types/paciente";
+import * as pacientesService from "../services/pacientes";
 
 interface PacienteApi {
   id: number;
@@ -109,7 +110,7 @@ export const usePacientesStore = create<PacientesState>()(
         set({ error: "" }, false, "crear/inicio");
 
         try {
-          const respuesta = await api.post<PacienteApi>("/pacientes", {
+          const respuesta = await pacientesService.create({
             nombre: datos.nombre.trim(),
             apellidoPaterno: datos.apellidoPaterno.trim(),
             apellidoMaterno: datos.apellidoMaterno.trim() || undefined,
@@ -169,10 +170,7 @@ export const usePacientesStore = create<PacientesState>()(
 
         try {
           if (Object.keys(datosApi).length > 0) {
-            const respuesta = await api.put<PacienteApi>(
-              `/pacientes/${id}`,
-              datosApi,
-            );
+            const respuesta = await pacientesService.update(id, datosApi);
 
             const pacienteActualizado = adaptarPaciente(respuesta.data);
 
@@ -215,7 +213,7 @@ export const usePacientesStore = create<PacientesState>()(
         set({ error: "" }, false, "eliminar/inicio");
 
         try {
-          await api.delete(`/pacientes/${id}`);
+          await pacientesService.remove(id);
 
           set(
             (state) => ({

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { api } from "../lib/axios";
 import type { Cita, EstadoCita, NuevaCita } from "../types/cita";
+import * as citasService from "../services/citas";
 
 interface CitasState {
   citas: Cita[];
@@ -97,9 +98,7 @@ export const useCitasStore = create<CitasState>()(
 
         try {
           // 2. Guarda el cambio en el backend.
-          const respuesta = await api.patch<Cita>(`/citas/${id}/estado`, {
-            estado,
-          });
+          const respuesta = await citasService.updateEstado(id, estado);
 
           // 3. Sincroniza con el registro confirmado por el servidor.
           set(
@@ -136,7 +135,7 @@ export const useCitasStore = create<CitasState>()(
       },
 
       agregarCita: async (datos) => {
-        const respuesta = await api.post<Cita>("/citas", datos);
+        const respuesta = await citasService.create(datos);
         const nuevaCita = respuesta.data;
 
         set(
