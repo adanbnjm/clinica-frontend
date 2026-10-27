@@ -9,9 +9,14 @@ import { usePacientesStore } from "../stores/pacientesStore";
 import { useFiltrosStore } from "../stores/filtrosStore";
 import toast from "react-hot-toast";
 import { extraerMensajeError } from "../lib/errorHandler";
+import { useDebounce } from "../hooks/useDebounce";
 
 export default function PaginaPacientes() {
   const pacientes = usePacientesStore((s) => s.pacientes);
+  const total = usePacientesStore((s) => s.total);
+  const pagina = usePacientesStore((s) => s.pagina);
+  const totalPaginas = usePacientesStore((s) => s.totalPaginas);
+  const cambiarPagina = usePacientesStore((s) => s.cambiarPagina);
   const cargando = usePacientesStore((s) => s.cargando);
   const errorCarga = usePacientesStore((s) => s.error);
   const cargar = usePacientesStore((s) => s.cargar);
@@ -21,6 +26,7 @@ export default function PaginaPacientes() {
 
   const busqueda = useFiltrosStore((s) => s.queryPacientes);
   const setBusqueda = useFiltrosStore((s) => s.setQueryPacientes);
+  const busquedaDebounced = useDebounce(busqueda, 350);
   const estadoFiltro = useFiltrosStore((s) => s.estadoPacienteFiltro);
   const setEstadoFiltro = useFiltrosStore((s) => s.setEstadoPacienteFiltro);
   const resetFiltros = useFiltrosStore((s) => s.resetFiltros);
@@ -42,27 +48,14 @@ export default function PaginaPacientes() {
   const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
 
   useEffect(() => {
-    void cargar();
-  }, [cargar]);
-
-  const textoBusqueda = busqueda.trim().toLowerCase();
+    void cargar(busquedaDebounced);
+  }, [cargar, busquedaDebounced]);
 
   const pacientesFiltrados = pacientes.filter((paciente) => {
-    const nombreCompleto =
-      `${paciente.nombre} ${paciente.apellido}`.toLowerCase();
-
-    const coincideTexto =
-      nombreCompleto.includes(textoBusqueda) ||
-      paciente.email.toLowerCase().includes(textoBusqueda) ||
-      paciente.telefono.toLowerCase().includes(textoBusqueda) ||
-      (paciente.especialidadAsignada ?? "")
-        .toLowerCase()
-        .includes(textoBusqueda);
-
     const coincideEstado =
       estadoFiltro === "Todos" || paciente.estado === estadoFiltro;
 
-    return coincideTexto && coincideEstado;
+    return coincideEstado;
   });
 
   const limpiarFiltros = () => {
@@ -168,16 +161,17 @@ export default function PaginaPacientes() {
             <h2 className="text-lg font-semibold">Lista de pacientes</h2>
 
             <p className="text-sm text-slate-500 dark:text-neutral-400">
-              {pacientesFiltrados.length}{" "}
-              {pacientesFiltrados.length === 1
-                ? "paciente encontrado"
-                : "pacientes encontrados"}
+              {pacientesFiltrados.length} en esta página · {total} en total
             </p>
           </div>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="flex-1">
-              <BuscadorPacientes value={busqueda} onChange={setBusqueda} />
+              <BuscadorPacientes
+                value={busqueda}
+                onChange={setBusqueda}
+                cargando={cargando}
+              />
             </div>
 
             <div className="w-full sm:w-56">
@@ -410,7 +404,7 @@ export default function PaginaPacientes() {
               <p>{errorCarga}</p>
               <button
                 type="button"
-                onClick={() => void cargar()}
+                onClick={() => void cargar(busquedaDebounced, pagina)}
                 disabled={cargando}
                 className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
               >
@@ -474,6 +468,34 @@ export default function PaginaPacientes() {
                   <h2 className="font-semibold text-slate-800 dark:text-neutral-100">
                     No se encontraron pacientes
                   </h2>
+                  {totalPaginas > 1 && (
+                    <nav
+                      aria-label="Paginación de pacientes"
+                      className="flex flex-wrap items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => void cambiarPagina(pagina - 1)}
+                        disabled={pagina <= 1 || cargando}
+                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700"
+                      >
+                        Anterior
+                      </button>
+
+                      <span className="text-sm text-slate-600 dark:text-neutral-300">
+                        Página {pagina} de {totalPaginas}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => void cambiarPagina(pagina + 1)}
+                        disabled={pagina >= totalPaginas || cargando}
+                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700"
+                      >
+                        Siguiente
+                      </button>
+                    </nav>
+                  )}
                   <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
                     Prueba con otra búsqueda o cambia el estado seleccionado.
                   </p>
