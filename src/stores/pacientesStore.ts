@@ -1,21 +1,9 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { api } from "../lib/axios";
 import type { Paciente, EstadoPaciente } from "../types/paciente";
 import * as pacientesService from "../services/pacientes";
-
-interface PacienteApi {
-  id: number;
-  nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string | null;
-  ci: string;
-  email: string;
-  telefono: string | null;
-  direccion: string | null;
-  fechaNacimiento: string;
-}
-
+import type { PacienteApi } from "../services/pacientes";
+import { useFiltrosStore } from "./filtrosStore";
 interface DatosNuevoPaciente {
   nombre: string;
   apellidoPaterno: string;
@@ -43,16 +31,19 @@ type DatosActualizarPaciente = Partial<
 
 interface PacientesState {
   pacientes: Paciente[];
+  total: number;
+  pagina: number;
+  totalPaginas: number;
   cargando: boolean;
   error: string;
 
-  cargar: (query?: string) => Promise<void>;
+  cargar: (query?: string, pagina?: number) => Promise<void>;
+  cambiarPagina: (pagina: number) => Promise<void>;
   crear: (datos: DatosNuevoPaciente) => Promise<Paciente>;
   actualizar: (id: number, datos: DatosActualizarPaciente) => Promise<void>;
   eliminar: (id: number) => Promise<void>;
 }
-
-function adaptarPaciente(paciente: PacienteApi): Paciente {
+export function adaptarPaciente(paciente: PacienteApi): Paciente {
   return {
     ...paciente,
     apellido: [paciente.apellidoPaterno, paciente.apellidoMaterno]
@@ -75,20 +66,28 @@ export const usePacientesStore = create<PacientesState>()(
   devtools(
     (set) => ({
       pacientes: [],
+      total: 0,
+      pagina: 1,
+      totalPaginas: 0,
       cargando: false,
       error: "",
 
-      cargar: async (query) => {
+      cargar: async (query, pagina = 1) => {
         set({ cargando: true, error: "" }, false, "cargar/inicio");
 
         try {
-          const respuesta = await api.get<PacienteApi[]>("/pacientes", {
-            params: query?.trim() ? { query: query.trim() } : undefined,
-          });
+          const respuesta = await pacientesService.obtenerPacientes(
+            query,
+            pagina,
+            10,
+          );
 
           set(
             {
-              pacientes: respuesta.data.map(adaptarPaciente),
+              pacientes: respuesta.data.data.map(adaptarPaciente),
+              total: respuesta.data.total,
+              pagina: respuesta.data.pagina,
+              totalPaginas: respuesta.data.totalPaginas,
               cargando: false,
             },
             false,
@@ -104,6 +103,11 @@ export const usePacientesStore = create<PacientesState>()(
             "cargar/error",
           );
         }
+      },
+
+      cambiarPagina: async (pagina) => {
+        const query = useFiltrosStore.getState().queryPacientes;
+        await usePacientesStore.getState().cargar(query, pagina);
       },
 
       crear: async (datos) => {
