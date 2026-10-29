@@ -7,10 +7,13 @@ import PaginaNotFound from "./pages/PaginaNotFound";
 import PaginaDetallePaciente from "./pages/PaginaDetallePaciente";
 import PaginaCitas from "./pages/PaginaCitas";
 import PaginaReportes from "./pages/PaginaReportes";
+import PaginaLogin from "./pages/PaginaLogin";
 
 export default function App() {
   return (
     <Routes>
+      <Route path="/login" element={<PaginaLogin />} />
+
       <Route element={<LayoutPrincipal />}>
         <Route index element={<PaginaDashboard />} />
         <Route path="pacientes" element={<PaginaPacientes />} />
