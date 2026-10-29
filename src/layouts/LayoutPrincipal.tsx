@@ -5,6 +5,7 @@ import { useAuthStore } from "../stores/authStore";
 export default function LayoutPrincipal() {
   const navigate = useNavigate();
   const cerrarSesion = useAuthStore((estado) => estado.logout);
+  const usuario = useAuthStore((estado) => estado.usuario);
 
   const manejarCierreSesion = () => {
     cerrarSesion();
@@ -83,6 +84,15 @@ export default function LayoutPrincipal() {
       </aside>
 
       <div className="min-h-screen md:pl-64">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4 dark:border-neutral-800 dark:bg-neutral-950">
+          <div>
+            <p className="font-semibold">{usuario?.email ?? "Usuario"}</p>
+            <p className="text-sm text-slate-500 dark:text-neutral-400">
+              Rol: {usuario?.rol ?? "Sin rol"}
+            </p>
+          </div>
+        </header>
+
         <Outlet />
       </div>
     </div>
