@@ -4,6 +4,8 @@ import type { Paciente, EstadoPaciente } from "../types/paciente";
 import * as pacientesService from "../services/pacientes";
 import type { PacienteApi } from "../services/pacientes";
 import { useFiltrosStore } from "./filtrosStore";
+import { extraerMensajeError } from "../lib/errorHandler";
+
 interface DatosNuevoPaciente {
   nombre: string;
   apellidoPaterno: string;
@@ -43,6 +45,7 @@ interface PacientesState {
   actualizar: (id: number, datos: DatosActualizarPaciente) => Promise<void>;
   eliminar: (id: number) => Promise<void>;
 }
+
 export function adaptarPaciente(paciente: PacienteApi): Paciente {
   return {
     ...paciente,
@@ -52,14 +55,6 @@ export function adaptarPaciente(paciente: PacienteApi): Paciente {
     telefono: paciente.telefono ?? "",
     estado: "activo",
   };
-}
-
-function obtenerMensajeError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Ocurrió un error inesperado.";
 }
 
 export const usePacientesStore = create<PacientesState>()(
@@ -96,7 +91,7 @@ export const usePacientesStore = create<PacientesState>()(
         } catch (error: unknown) {
           set(
             {
-              error: obtenerMensajeError(error),
+              error: extraerMensajeError(error),
               cargando: false,
             },
             false,
@@ -135,10 +130,10 @@ export const usePacientesStore = create<PacientesState>()(
             false,
             "crear/exito",
           );
+
           return nuevoPaciente;
         } catch (error: unknown) {
-          const mensaje = obtenerMensajeError(error);
-          set({ error: mensaje }, false, "crear/error");
+          set({ error: extraerMensajeError(error) }, false, "crear/error");
           throw error;
         }
       },
@@ -175,7 +170,6 @@ export const usePacientesStore = create<PacientesState>()(
         try {
           if (Object.keys(datosApi).length > 0) {
             const respuesta = await pacientesService.update(id, datosApi);
-
             const pacienteActualizado = adaptarPaciente(respuesta.data);
 
             set(
@@ -208,7 +202,7 @@ export const usePacientesStore = create<PacientesState>()(
             );
           }
         } catch (error: unknown) {
-          set({ error: obtenerMensajeError(error) }, false, "actualizar/error");
+          set({ error: extraerMensajeError(error) }, false, "actualizar/error");
           throw error;
         }
       },
@@ -229,7 +223,7 @@ export const usePacientesStore = create<PacientesState>()(
             "eliminar/exito",
           );
         } catch (error: unknown) {
-          set({ error: obtenerMensajeError(error) }, false, "eliminar/error");
+          set({ error: extraerMensajeError(error) }, false, "eliminar/error");
           throw error;
         }
       },

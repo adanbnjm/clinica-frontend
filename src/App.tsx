@@ -6,6 +6,7 @@ import PaginaNuevaCita from "./pages/PaginaNuevaCita";
 import PaginaNotFound from "./pages/PaginaNotFound";
 import PaginaDetallePaciente from "./pages/PaginaDetallePaciente";
 import PaginaCitas from "./pages/PaginaCitas";
+import PaginaReportes from "./pages/PaginaReportes";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="pacientes/:id" element={<PaginaDetallePaciente />} />
         <Route path="citas/nueva" element={<PaginaNuevaCita />} />
         <Route path="citas" element={<PaginaCitas />} />
+        <Route path="reportes" element={<PaginaReportes />} />
         <Route path="*" element={<PaginaNotFound />} />
       </Route>
     </Routes>

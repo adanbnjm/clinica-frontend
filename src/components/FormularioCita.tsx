@@ -7,6 +7,7 @@ import { useMedicos } from "../hooks/useMedicos";
 import { usePacientesStore } from "../stores/pacientesStore";
 import { useCitasStore } from "../stores/citasStore";
 import type { NuevaCita } from "../types/cita";
+import { extraerMensajeError } from "../lib/errorHandler";
 
 export default function FormularioCita() {
   const { medicos, cargando } = useMedicos();
@@ -24,6 +25,7 @@ export default function FormularioCita() {
   const [citaConfirmada, setCitaConfirmada] = useState<CitaFormData | null>(
     null,
   );
+  const [errorCita, setErrorCita] = useState("");
 
   const {
     register,
@@ -54,6 +56,8 @@ export default function FormularioCita() {
   })();
 
   const enviarFormulario = async (datos: CitaFormData) => {
+    setErrorCita("");
+
     try {
       const fechaHora = `${datos.fecha}T${datos.hora}:00`;
 
@@ -65,8 +69,8 @@ export default function FormularioCita() {
 
       await agregarCita(nuevaCita);
       setCitaConfirmada(datos);
-    } catch (error) {
-      console.error("Error al agendar la cita:", error);
+    } catch (error: unknown) {
+      setErrorCita(extraerMensajeError(error));
     }
   };
 
@@ -176,6 +180,11 @@ export default function FormularioCita() {
             </dd>
           </div>
         </dl>
+        {errorCita && (
+          <p role="alert" className="text-sm text-red-600">
+            {errorCita}
+          </p>
+        )}
 
         <button
           type="button"
