@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../stores/authStore";
 
 export default function LayoutPrincipal() {
+  const navigate = useNavigate();
+  const cerrarSesion = useAuthStore((estado) => estado.logout);
+
+  const manejarCierreSesion = () => {
+    cerrarSesion();
+    navigate("/login", { replace: true });
+  };
   const [modoOscuro, setModoOscuro] = useState(
     () => localStorage.getItem("tema-clinica") === "oscuro",
   );
@@ -54,7 +62,7 @@ export default function LayoutPrincipal() {
           </NavLink>
         </nav>
 
-        <div className="mt-auto">
+        <div className="mt-auto space-y-3">
           <button
             type="button"
             onClick={() => setModoOscuro((actual) => !actual)}
@@ -62,6 +70,14 @@ export default function LayoutPrincipal() {
             className="w-full rounded-lg border border-emerald-600 px-4 py-3 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-neutral-900"
           >
             {modoOscuro ? "☀️ Modo claro" : "🌙 Modo oscuro"}
+          </button>
+
+          <button
+            type="button"
+            onClick={manejarCierreSesion}
+            className="w-full rounded-lg border border-red-300 px-4 py-3 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+          >
+            Cerrar sesión
           </button>
         </div>
       </aside>
