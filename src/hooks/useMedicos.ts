@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/axios";
+import { extraerMensajeError } from "../lib/errorHandler";
 
 interface MedicoApi {
   id: number;
@@ -41,11 +42,9 @@ export function useMedicos() {
             })),
           );
         }
-      } catch {
+      } catch (err: unknown) {
         if (activo) {
-          setError(
-            "No se pudieron cargar los médicos. Comprueba tu sesión y vuelve a intentarlo.",
-          );
+          setError(extraerMensajeError(err));
         }
       } finally {
         if (activo) {

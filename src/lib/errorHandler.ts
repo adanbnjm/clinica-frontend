@@ -23,6 +23,8 @@ export function extraerMensajeError(err: unknown): string {
     if (!err.response) {
       return "No se pudo conectar con el servidor.";
     }
+
+    return "Error del servidor";
   }
 
   if (err instanceof Error) {

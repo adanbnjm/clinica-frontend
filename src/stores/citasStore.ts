@@ -3,15 +3,16 @@ import { devtools } from "zustand/middleware";
 import { api } from "../lib/axios";
 import type { Cita, EstadoCita, NuevaCita } from "../types/cita";
 import * as citasService from "../services/citas";
+import { extraerMensajeError } from "../lib/errorHandler";
 
 interface CitasState {
   citas: Cita[];
   citaSeleccionada: Cita | null;
   cargando: boolean;
+  error: string | null;
 
   cargar: () => Promise<void>;
   cargarPorPaciente: (id: number) => Promise<void>;
-
   seleccionar: (id: number) => void;
   actualizarEstado: (id: number, estado: EstadoCita) => Promise<void>;
   agregarCita: (datos: NuevaCita) => Promise<Cita>;
@@ -23,9 +24,10 @@ export const useCitasStore = create<CitasState>()(
       citas: [],
       citaSeleccionada: null,
       cargando: false,
+      error: null,
 
       cargar: async () => {
-        set({ cargando: true }, false, "cargar/inicio");
+        set({ cargando: true, error: null }, false, "cargar/inicio");
 
         try {
           const respuesta = await api.get<Cita[]>("/citas");
@@ -38,13 +40,16 @@ export const useCitasStore = create<CitasState>()(
             false,
             "cargar/exito",
           );
+        } catch (error: unknown) {
+          set({ error: extraerMensajeError(error) }, false, "cargar/error");
+          throw error;
         } finally {
           set({ cargando: false }, false, "cargar/fin");
         }
       },
 
       cargarPorPaciente: async (id) => {
-        set({ cargando: true }, false, "cargarPorPaciente/inicio");
+        set({ cargando: true, error: null }, false, "cargarPorPaciente/inicio");
 
         try {
           const respuesta = await api.get<Cita[]>("/citas");
@@ -61,6 +66,13 @@ export const useCitasStore = create<CitasState>()(
             false,
             "cargarPorPaciente/exito",
           );
+        } catch (error: unknown) {
+          set(
+            { error: extraerMensajeError(error) },
+            false,
+            "cargarPorPaciente/error",
+          );
+          throw error;
         } finally {
           set({ cargando: false }, false, "cargarPorPaciente/fin");
         }
@@ -81,9 +93,9 @@ export const useCitasStore = create<CitasState>()(
 
         const citaSeleccionadaAnterior = get().citaSeleccionada;
 
-        // 1. Actualización optimista: cambia la interfaz inmediatamente.
         set(
           (state) => ({
+            error: null,
             citas: state.citas.map((cita) =>
               cita.id === id ? { ...cita, estado } : cita,
             ),
@@ -97,10 +109,8 @@ export const useCitasStore = create<CitasState>()(
         );
 
         try {
-          // 2. Guarda el cambio en el backend.
           const respuesta = await citasService.updateEstado(id, estado);
 
-          // 3. Sincroniza con el registro confirmado por el servidor.
           set(
             (state) => ({
               citas: state.citas.map((cita) =>
@@ -114,10 +124,10 @@ export const useCitasStore = create<CitasState>()(
             false,
             "actualizarEstado/exito",
           );
-        } catch (error) {
-          // 4. Si falla la petición, restaura el estado anterior.
+        } catch (error: unknown) {
           set(
             (state) => ({
+              error: extraerMensajeError(error),
               citas: state.citas.map((cita) =>
                 cita.id === id ? estadoAnterior : cita,
               ),
@@ -135,18 +145,29 @@ export const useCitasStore = create<CitasState>()(
       },
 
       agregarCita: async (datos) => {
-        const respuesta = await citasService.create(datos);
-        const nuevaCita = respuesta.data;
+        set({ error: null }, false, "agregarCita/inicio");
 
-        set(
-          (state) => ({
-            citas: [...state.citas, nuevaCita],
-          }),
-          false,
-          "agregarCita",
-        );
+        try {
+          const respuesta = await citasService.create(datos);
+          const nuevaCita = respuesta.data;
 
-        return nuevaCita;
+          set(
+            (state) => ({
+              citas: [...state.citas, nuevaCita],
+            }),
+            false,
+            "agregarCita/exito",
+          );
+
+          return nuevaCita;
+        } catch (error: unknown) {
+          set(
+            { error: extraerMensajeError(error) },
+            false,
+            "agregarCita/error",
+          );
+          throw error;
+        }
       },
     }),
     { name: "CitasStore" },

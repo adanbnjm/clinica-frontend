@@ -6,6 +6,7 @@ import type { Metrica } from "../types";
 import { api } from "../lib/axios";
 import { usePacientesStore } from "../stores/pacientesStore";
 import { useCitasStore } from "../stores/citasStore";
+import { extraerMensajeError } from "../lib/errorHandler";
 
 interface MedicoApi {
   id: number;
@@ -33,10 +34,8 @@ export default function PaginaDashboard() {
     try {
       const respuesta = await api.get<MedicoApi[]>("/medicos");
       setTotalMedicos(respuesta.data.length);
-    } catch {
-      setErrorMedicos(
-        "No se pudieron cargar los médicos. Comprueba tu sesión y el backend.",
-      );
+    } catch (err: unknown) {
+      setErrorMedicos(extraerMensajeError(err));
     } finally {
       setCargandoMedicos(false);
     }
@@ -205,6 +204,23 @@ export default function PaginaDashboard() {
             className="mt-4 inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-emerald-700"
           >
             Ver pacientes
+          </Link>
+        </section>
+
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
+            Reportes de la clínica
+          </h2>
+
+          <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
+            Consulta las estadísticas de citas por especialidad y por día.
+          </p>
+
+          <Link
+            to="/reportes"
+            className="mt-4 inline-flex items-center font-semibold text-emerald-700 transition-colors hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+          >
+            Ver reportes completos →
           </Link>
         </section>
 
