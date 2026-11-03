@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { usePacientesStore } from "../stores/pacientesStore";
 import PaginaNotFound from "./PaginaNotFound";
+import Spinner from "../shared/components/ui/Spinner";
 
 export default function PaginaDetallePaciente() {
   const { id } = useParams();
@@ -21,9 +22,7 @@ export default function PaginaDetallePaciente() {
   const paciente = pacientes.find((paciente) => paciente.id === Number(id));
 
   if (cargando && !paciente) {
-    return (
-      <main className="p-8 text-center">Cargando datos del paciente...</main>
-    );
+    return <Spinner fullscreen />;
   }
 
   if (error && !paciente) {
