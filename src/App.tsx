@@ -10,6 +10,7 @@ import PaginaCitas from "./pages/PaginaCitas";
 import PaginaReportes from "./pages/PaginaReportes";
 import PaginaLogin from "./pages/PaginaLogin";
 import PaginaSinAcceso from "./pages/PaginaSinAcceso";
+import PaginaHistorialCitas from "./pages/PaginaHistorialCitas";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="pacientes/:id" element={<PaginaDetallePaciente />} />
           <Route path="citas/nueva" element={<PaginaNuevaCita />} />
           <Route path="citas" element={<PaginaCitas />} />
+          <Route path="citas/historial" element={<PaginaHistorialCitas />} />
           <Route path="*" element={<PaginaNotFound />} />
         </Route>
       </Route>
