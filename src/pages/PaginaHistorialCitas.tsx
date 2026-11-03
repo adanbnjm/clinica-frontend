@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import { getPaginadas } from "../services/citas";
 import { extraerMensajeError } from "../lib/errorHandler";
 import type { Cita, EstadoCita } from "../types/cita";
+import SkeletonCitaRow from "../components/SkeletonCitaRow";
+import EstadoVacio from "../shared/components/ui/EstadoVacio";
 
 const POR_PAGINA = 10;
 
@@ -141,47 +143,40 @@ export default function PaginaHistorialCitas() {
           </thead>
 
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {cargando ? (
-              Array.from({ length: POR_PAGINA }, (_, indice) => (
-                <tr key={indice} className="animate-pulse">
-                  {Array.from({ length: 5 }, (_, columna) => (
-                    <td key={columna} className="px-4 py-4">
-                      <div className="h-5 rounded bg-gray-200 dark:bg-gray-700" />
+            {cargando
+              ? Array.from({ length: POR_PAGINA }, (_, indice) => (
+                  <SkeletonCitaRow key={indice} />
+                ))
+              : citas.map((cita) => (
+                  <tr key={cita.id}>
+                    <td className="px-4 py-4">{cita.id}</td>
+                    <td className="px-4 py-4">{cita.pacienteId}</td>
+                    <td className="px-4 py-4">{cita.medicoId}</td>
+                    <td className="px-4 py-4">
+                      {new Date(cita.fechaHora).toLocaleString("es-BO")}
                     </td>
-                  ))}
-                </tr>
-              ))
-            ) : citas.length > 0 ? (
-              citas.map((cita) => (
-                <tr key={cita.id} className="text-gray-700 dark:text-gray-300">
-                  <td className="px-4 py-3 font-medium">#{cita.id}</td>
-                  <td className="px-4 py-3">#{cita.pacienteId}</td>
-                  <td className="px-4 py-3">#{cita.medicoId}</td>
-                  <td className="px-4 py-3">
-                    {new Date(cita.fechaHora).toLocaleString("es-BO")}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estilosEstado[cita.estado]}`}
-                    >
-                      {cita.estado}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
-                >
-                  No hay citas para mostrar.
-                </td>
-              </tr>
-            )}
+                    <td className="px-4 py-4">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-medium ${estilosEstado[cita.estado]}`}
+                      >
+                        {cita.estado}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
           </tbody>
         </table>
       </div>
+      {!cargando && !errorCarga && citas.length === 0 && (
+        <EstadoVacio
+          titulo="Sin citas registradas"
+          mensaje="No hay citas que coincidan con el estado seleccionado."
+          textoAccion={estado !== "Todos" ? "Limpiar filtro" : undefined}
+          onAccion={
+            estado !== "Todos" ? () => cambiarEstado("Todos") : undefined
+          }
+        />
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">

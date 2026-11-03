@@ -3,6 +3,8 @@ import toast from "react-hot-toast";
 import { useCitasStore } from "../stores/citasStore";
 import { extraerMensajeError } from "../lib/errorHandler";
 import type { EstadoCita } from "../types/cita";
+import Spinner from "../shared/components/ui/Spinner";
+import EstadoVacio from "../shared/components/ui/EstadoVacio";
 
 const estados: EstadoCita[] = ["PROGRAMADA", "COMPLETADA", "CANCELADA"];
 
@@ -84,13 +86,12 @@ export default function PaginaCitas() {
       )}
 
       {cargando && citas.length === 0 ? (
-        <p className="text-gray-600 dark:text-gray-400">Cargando citas...</p>
+        <Spinner />
       ) : !errorCarga && citas.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 p-8 text-center dark:border-gray-700">
-          <p className="font-medium text-gray-700 dark:text-gray-200">
-            No hay citas registradas.
-          </p>
-        </div>
+        <EstadoVacio
+          titulo="No hay citas registradas"
+          mensaje="Cuando se registren nuevas citas, aparecerán aquí."
+        />
       ) : (
         citas.length > 0 && (
           <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
@@ -112,15 +113,11 @@ export default function PaginaCitas() {
                     className="text-gray-700 dark:text-gray-300"
                   >
                     <td className="px-4 py-3 font-medium">#{cita.id}</td>
-
                     <td className="px-4 py-3">#{cita.pacienteId}</td>
-
                     <td className="px-4 py-3">#{cita.medicoId}</td>
-
                     <td className="px-4 py-3">
                       {new Date(cita.fechaHora).toLocaleString("es-BO")}
                     </td>
-
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <span

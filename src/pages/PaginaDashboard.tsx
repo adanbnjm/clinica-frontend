@@ -7,6 +7,7 @@ import { api } from "../lib/axios";
 import { usePacientesStore } from "../stores/pacientesStore";
 import { useCitasStore } from "../stores/citasStore";
 import { extraerMensajeError } from "../lib/errorHandler";
+import SkeletonMetricCard from "../components/SkeletonMetricCard";
 
 interface MedicoApi {
   id: number;
@@ -154,12 +155,6 @@ export default function PaginaDashboard() {
           </div>
         </header>
 
-        {cargando && (
-          <p role="status" className="mb-4 text-sm text-slate-600">
-            Cargando métricas...
-          </p>
-        )}
-
         {error && (
           <div
             role="alert"
@@ -183,11 +178,16 @@ export default function PaginaDashboard() {
 
         <section
           aria-label="Métricas de la clínica"
+          aria-busy={cargando}
           className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
         >
-          {metricas.map((metrica) => (
-            <MetricCard key={metrica.id} metrica={metrica} />
-          ))}
+          {cargando
+            ? Array.from({ length: 4 }, (_, indice) => (
+                <SkeletonMetricCard key={indice} />
+              ))
+            : metricas.map((metrica) => (
+                <MetricCard key={metrica.id} metrica={metrica} />
+              ))}
         </section>
 
         <section className="mt-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors duration-300 dark:border-neutral-800 dark:bg-neutral-950">

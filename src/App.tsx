@@ -11,6 +11,7 @@ import PaginaReportes from "./pages/PaginaReportes";
 import PaginaLogin from "./pages/PaginaLogin";
 import PaginaSinAcceso from "./pages/PaginaSinAcceso";
 import PaginaHistorialCitas from "./pages/PaginaHistorialCitas";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 export default function App() {
   return (
@@ -34,7 +35,14 @@ export default function App() {
         element={<RutaProtegida rolesPermitidos={["GERENCIA", "ADMIN"]} />}
       >
         <Route element={<LayoutPrincipal />}>
-          <Route path="reportes" element={<PaginaReportes />} />
+          <Route
+            path="reportes"
+            element={
+              <ErrorBoundary>
+                <PaginaReportes />
+              </ErrorBoundary>
+            }
+          />
         </Route>
       </Route>
     </Routes>

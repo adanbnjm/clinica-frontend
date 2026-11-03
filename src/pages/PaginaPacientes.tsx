@@ -3,13 +3,15 @@ import type * as React from "react";
 import type { EstadoPaciente } from "../types/paciente";
 import BuscadorPacientes from "../components/BuscadorPacientes";
 import PacienteRow from "../components/PacienteRow";
-import ModalConfirmacion from "../components/ModalConfirmacion";
+import ModalConfirmacion from "../shared/components/ui/ModalConfirmacion";
 import { Link } from "react-router-dom";
 import { usePacientesStore } from "../stores/pacientesStore";
 import { useFiltrosStore } from "../stores/filtrosStore";
 import toast from "react-hot-toast";
 import { extraerMensajeError } from "../lib/errorHandler";
 import { useDebounce } from "../hooks/useDebounce";
+import SkeletonPacienteRow from "../components/SkeletonPacienteRow";
+import EstadoVacio from "../shared/components/ui/EstadoVacio";
 
 export default function PaginaPacientes() {
   const pacientes = usePacientesStore((s) => s.pacientes);
@@ -390,11 +392,10 @@ export default function PaginaPacientes() {
           aria-label="Resultados de pacientes"
           className="flex flex-col gap-4"
         >
-          {cargando && (
-            <p className="rounded-xl border border-slate-200 bg-white p-4 text-slate-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300">
-              Cargando pacientes...
-            </p>
-          )}
+          {cargando &&
+            Array.from({ length: 5 }, (_, indice) => (
+              <SkeletonPacienteRow key={indice} />
+            ))}
 
           {errorCarga && (
             <div
@@ -464,10 +465,22 @@ export default function PaginaPacientes() {
                 </article>
               ))
             : !cargando && (
-                <div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center transition-colors dark:border-neutral-800 dark:bg-neutral-950">
-                  <h2 className="font-semibold text-slate-800 dark:text-neutral-100">
-                    No se encontraron pacientes
-                  </h2>
+                <>
+                  <EstadoVacio
+                    titulo="No se encontraron pacientes"
+                    mensaje="Prueba con otra búsqueda o cambia el estado seleccionado."
+                    textoAccion={
+                      busqueda || estadoFiltro !== "Todos"
+                        ? "Limpiar filtros"
+                        : undefined
+                    }
+                    onAccion={
+                      busqueda || estadoFiltro !== "Todos"
+                        ? limpiarFiltros
+                        : undefined
+                    }
+                  />
+
                   {totalPaginas > 1 && (
                     <nav
                       aria-label="Paginación de pacientes"
@@ -496,10 +509,7 @@ export default function PaginaPacientes() {
                       </button>
                     </nav>
                   )}
-                  <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
-                    Prueba con otra búsqueda o cambia el estado seleccionado.
-                  </p>
-                </div>
+                </>
               )}
         </section>
       </div>
