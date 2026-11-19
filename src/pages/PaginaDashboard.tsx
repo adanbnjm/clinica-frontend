@@ -4,8 +4,8 @@ import MetricCard from "../components/MetricCard";
 import StatusBadge from "../components/StatusBadge";
 import type { Metrica } from "../types";
 import { api } from "../lib/axios";
-import { usePacientesStore } from "../stores/pacientesStore";
-import { useCitasStore } from "../stores/citasStore";
+import { usePacientes } from "../hooks/usePacientes";
+import { useCitas } from "../hooks/useCitas";
 import { extraerMensajeError } from "../lib/errorHandler";
 import SkeletonMetricCard from "../components/SkeletonMetricCard";
 
@@ -19,15 +19,19 @@ export default function PaginaDashboard() {
   const [cargandoMedicos, setCargandoMedicos] = useState(true);
   const [errorMedicos, setErrorMedicos] = useState("");
 
-  const pacientes = usePacientesStore((s) => s.pacientes);
-  const cargarPacientes = usePacientesStore((s) => s.cargar);
-  const cargandoPacientes = usePacientesStore((s) => s.cargando);
-  const errorPacientes = usePacientesStore((s) => s.error);
+  const {
+    pacientes,
+    cargar: cargarPacientes,
+    cargando: cargandoPacientes,
+    error: errorPacientes,
+  } = usePacientes();
 
-  const citas = useCitasStore((s) => s.citas);
-  const cargarTodasLasCitas = useCitasStore((s) => s.cargar);
-  const cargandoCitas = useCitasStore((s) => s.cargando);
-
+  const {
+    citas,
+    cargar: cargarTodasLasCitas,
+    cargando: cargandoCitas,
+    error: errorCitas,
+  } = useCitas();
   const cargarMedicos = async () => {
     setCargandoMedicos(true);
     setErrorMedicos("");
@@ -43,20 +47,12 @@ export default function PaginaDashboard() {
   };
 
   useEffect(() => {
-    if (pacientes.length === 0) {
-      void cargarPacientes();
-    }
-
-    if (citas.length === 0) {
-      void cargarTodasLasCitas();
-    }
-
     void cargarMedicos();
-  }, [pacientes.length, citas.length, cargarPacientes, cargarTodasLasCitas]);
+  }, []);
 
   const cargando = cargandoPacientes || cargandoCitas || cargandoMedicos;
 
-  const error = errorPacientes || errorMedicos;
+  const error = errorPacientes || errorCitas || errorMedicos;
 
   const totalPacientes = pacientes.length;
 
