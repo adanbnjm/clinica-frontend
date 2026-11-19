@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
-import { useCitasStore } from "../stores/citasStore";
+import { useCitas } from "../hooks/useCitas";
 import { extraerMensajeError } from "../lib/errorHandler";
 import type { EstadoCita } from "../types/cita";
 import Spinner from "../shared/components/ui/Spinner";
@@ -16,29 +16,15 @@ const estilosEstado: Record<EstadoCita, string> = {
 };
 
 export default function PaginaCitas() {
-  const citas = useCitasStore((state) => state.citas);
-  const cargar = useCitasStore((state) => state.cargar);
-  const cargando = useCitasStore((state) => state.cargando);
-  const actualizarEstado = useCitasStore((state) => state.actualizarEstado);
+  const {
+    citas,
+    cargar,
+    cargando,
+    actualizarEstado,
+    error: errorCarga,
+  } = useCitas();
 
   const [actualizandoId, setActualizandoId] = useState<number | null>(null);
-  const [errorCarga, setErrorCarga] = useState("");
-
-  useEffect(() => {
-    let activa = true;
-
-    cargar()
-      .then(() => {
-        if (activa) setErrorCarga("");
-      })
-      .catch((error: unknown) => {
-        if (activa) setErrorCarga(extraerMensajeError(error));
-      });
-
-    return () => {
-      activa = false;
-    };
-  }, [cargar]);
 
   async function manejarCambioEstado(id: number, estado: EstadoCita) {
     setActualizandoId(id);
@@ -73,10 +59,7 @@ export default function PaginaCitas() {
           <button
             type="button"
             onClick={() => {
-              setErrorCarga("");
-              cargar().catch((error: unknown) => {
-                setErrorCarga(extraerMensajeError(error));
-              });
+              void cargar().catch(() => {});
             }}
             className="mt-2 font-semibold underline"
           >

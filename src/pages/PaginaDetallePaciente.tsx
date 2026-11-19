@@ -1,6 +1,5 @@
-import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { usePacientesStore } from "../stores/pacientesStore";
+import { usePacientes } from "../hooks/usePacientes";
 import PaginaNotFound from "./PaginaNotFound";
 import Spinner from "../shared/components/ui/Spinner";
 
@@ -8,16 +7,7 @@ export default function PaginaDetallePaciente() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const pacientes = usePacientesStore((s) => s.pacientes);
-  const cargar = usePacientesStore((s) => s.cargar);
-  const cargando = usePacientesStore((s) => s.cargando);
-  const error = usePacientesStore((s) => s.error);
-
-  useEffect(() => {
-    if (pacientes.length === 0) {
-      void cargar();
-    }
-  }, [pacientes.length, cargar]);
+  const { pacientes, cargar, cargando, error } = usePacientes();
 
   const paciente = pacientes.find((paciente) => paciente.id === Number(id));
 

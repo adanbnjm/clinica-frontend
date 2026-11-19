@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type * as React from "react";
 import type { EstadoPaciente } from "../types/paciente";
 import BuscadorPacientes from "../components/BuscadorPacientes";
 import PacienteRow from "../components/PacienteRow";
 import ModalConfirmacion from "../shared/components/ui/ModalConfirmacion";
 import { Link } from "react-router-dom";
-import { usePacientesStore } from "../stores/pacientesStore";
+import { usePacientes } from "../hooks/usePacientes";
 import { useFiltrosStore } from "../stores/filtrosStore";
 import toast from "react-hot-toast";
 import { extraerMensajeError } from "../lib/errorHandler";
@@ -14,21 +14,24 @@ import SkeletonPacienteRow from "../components/SkeletonPacienteRow";
 import EstadoVacio from "../shared/components/ui/EstadoVacio";
 
 export default function PaginaPacientes() {
-  const pacientes = usePacientesStore((s) => s.pacientes);
-  const total = usePacientesStore((s) => s.total);
-  const pagina = usePacientesStore((s) => s.pagina);
-  const totalPaginas = usePacientesStore((s) => s.totalPaginas);
-  const cambiarPagina = usePacientesStore((s) => s.cambiarPagina);
-  const cargando = usePacientesStore((s) => s.cargando);
-  const errorCarga = usePacientesStore((s) => s.error);
-  const cargar = usePacientesStore((s) => s.cargar);
-  const crear = usePacientesStore((s) => s.crear);
-  const actualizar = usePacientesStore((s) => s.actualizar);
-  const eliminar = usePacientesStore((s) => s.eliminar);
-
   const busqueda = useFiltrosStore((s) => s.queryPacientes);
   const setBusqueda = useFiltrosStore((s) => s.setQueryPacientes);
   const busquedaDebounced = useDebounce(busqueda, 350);
+
+  const {
+    pacientes,
+    total,
+    pagina,
+    totalPaginas,
+    cambiarPagina,
+    cargando,
+    error: errorCarga,
+    cargar,
+    crear,
+    actualizar,
+    eliminar,
+  } = usePacientes(busquedaDebounced);
+
   const estadoFiltro = useFiltrosStore((s) => s.estadoPacienteFiltro);
   const setEstadoFiltro = useFiltrosStore((s) => s.setEstadoPacienteFiltro);
   const resetFiltros = useFiltrosStore((s) => s.resetFiltros);
@@ -48,10 +51,6 @@ export default function PaginaPacientes() {
     number | null
   >(null);
   const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
-
-  useEffect(() => {
-    void cargar(busquedaDebounced);
-  }, [cargar, busquedaDebounced]);
 
   const pacientesFiltrados = pacientes.filter((paciente) => {
     const coincideEstado =

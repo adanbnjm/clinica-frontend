@@ -1,27 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { CitaFormData } from "../schemas/citaSchema";
 import { citaSchema } from "../schemas/citaSchema";
 import { useMedicos } from "../hooks/useMedicos";
-import { usePacientesStore } from "../stores/pacientesStore";
-import { useCitasStore } from "../stores/citasStore";
+import { usePacientes } from "../hooks/usePacientes";
+import { useCitas } from "../hooks/useCitas";
 import type { NuevaCita } from "../types/cita";
 import { extraerMensajeError } from "../lib/errorHandler";
 
 export default function FormularioCita() {
-  const { medicos, cargando } = useMedicos();
-  const pacientes = usePacientesStore((s) => s.pacientes);
-  const cargarPacientes = usePacientesStore((s) => s.cargar);
-  const cargandoPacientes = usePacientesStore((s) => s.cargando);
-  const errorPacientes = usePacientesStore((s) => s.error);
-  const agregarCita = useCitasStore((s) => s.agregarCita);
+  const {
+    pacientes,
+    cargando: cargandoPacientes,
+    error: errorPacientes,
+  } = usePacientes();
 
-  useEffect(() => {
-    if (pacientes.length === 0) {
-      void cargarPacientes();
-    }
-  }, [pacientes.length, cargarPacientes]);
+  const { agregarCita } = useCitas();
+  const { medicos, cargando } = useMedicos();
   const [citaConfirmada, setCitaConfirmada] = useState<CitaFormData | null>(
     null,
   );
